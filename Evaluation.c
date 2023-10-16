@@ -111,9 +111,11 @@ int RedirectCommand(Expression *expr){
           dup2(out, STDOUT_FILENO);
 
         }
+        evaluateExpr(expr->left);
         close(out);
-        execvp(expr->left->argv[0],expr->left->argv);
-        perror("execvp");
+        //close(out);
+        //execvp(expr->left->argv[0],expr->left->argv);
+        //perror("execvp");
         exit(127);
       }
       waitpid(pid, NULL, 0);
@@ -133,9 +135,11 @@ int RedirectCommand(Expression *expr){
         else {
           dup2(in, expr->redirect.fd);
         }
+        //close(in);
+        //execvp(expr->left->argv[0],expr->left->argv);
+        evaluateExpr(expr->left);
         close(in);
-        execvp(expr->left->argv[0],expr->left->argv);
-        perror("execvp");
+        //perror("execvp");
         exit(127);
       }
       waitpid(pid, NULL, 0);
