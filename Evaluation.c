@@ -20,12 +20,13 @@ int evaluateExpr(Expression *expr) {
   switch (expr->type) {
     case ET_EMPTY:
       fprintf(stderr, "Expression is empty\n");
+      return 1;
       break;
     case ET_SIMPLE: // Commande simple
-      simpleCommand(expr);
+      return simpleCommand(expr);
       break;
     case ET_REDIRECT: // Redirection
-      RedirectCommand(expr);
+      return RedirectCommand(expr);
       break;
     case ET_SEQUENCE: // Séquence (;)
       break;
@@ -157,6 +158,7 @@ int RedirectCommand(Expression *expr){
       break;
     default:
       fprintf(stderr,"No redirect command valid");
+      return 1;
       break;
   }
   return shellStatus;
