@@ -26,15 +26,10 @@ int evaluateExpr(Expression *expr) {
   char *command = expr->argsList.args[0]; // Commande principale
 
   char *args[64];
-  int arg_count = 0;
-  char *token = strtok(command, " ");
-
-  while (token != NULL) {
-      args[arg_count] = token;
-      arg_count++;
-      token = strtok(NULL, " ");
+  for (int i = 0; i < expr->argc; i++){
+    args[i] = expr->argv[i];
   }
-  args[arg_count] = NULL;
+  args[expr->argc] = NULL;
 
   pid_t pid;
 
