@@ -29,10 +29,19 @@ int evaluateExpr(Expression *expr) {
       return RedirectCommand(expr);
       break;
     case ET_SEQUENCE: // Séquence (;)
+      if (evaluateExpr(expr->left) == 1 || evaluateExpr(expr->right) == 1) { return 1; }
+      return shellStatus;
       break;
     case ET_SEQUENCE_AND: // Séquence conditionnelle (&&)
+      if (evaluateExpr(expr->left) == 0) {
+        if(evaluateExpr(expr->right) == 0) {return 0;};
+      }
+      return 1;
       break;
     case ET_SEQUENCE_OR: // Séquence conditionnelle (||)
+      if (evaluateExpr(expr->left) == 0) { return 0;}
+      else {return evaluateExpr(expr->right);}
+      return 1;
       break;
     case ET_BG: // Tâche en arrière-plan (&)
       break;
