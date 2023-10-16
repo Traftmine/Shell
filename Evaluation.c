@@ -127,7 +127,7 @@ int RedirectCommand(Expression *expr){
         }
         if (expr->redirect.fd == -1) {
           dup2(in, STDIN_FILENO); // Redirige stdin depuis le fichier
-          dup2(in,STDERR_FILENO);
+          dup2(in, STDERR_FILENO);
         }
         else {
           dup2(in, expr->redirect.fd);
