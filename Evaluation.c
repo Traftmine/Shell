@@ -102,7 +102,14 @@ int RedirectCommand(Expression *expr){
           perror("open");
           exit(1);
         }
-        dup2(out, expr->redirect.fd); // Redirige stdout vers le fichier
+        if (expr->redirect.fd == -1){
+          dup2(out, STDERR_FILENO);
+          dup2(out, STDOUT_FILENO); // Redirige stdout vers le fichier
+        }
+        else {
+          dup2(out, STDOUT_FILENO);
+
+        }
         close(out);
         execvp(expr->left->argv[0],expr->left->argv);
         perror("execvp");
@@ -118,7 +125,13 @@ int RedirectCommand(Expression *expr){
           perror("open");
           exit(1);
         }
-        dup2(in, expr->redirect.fd); // Redirige stdin depuis le fichier
+        if (expr->redirect.fd == -1) {
+          dup2(in, STDIN_FILENO); // Redirige stdin depuis le fichier
+          dup2(in,STDERR_FILENO);
+        }
+        else {
+          dup2(in, expr->redirect.fd);
+        }
         close(in);
         execvp(expr->left->argv[0],expr->left->argv);
         perror("execvp");
