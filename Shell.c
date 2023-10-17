@@ -3,7 +3,6 @@
 #include "Evaluation.h"
 
 #include <stdio.h>
-
 #include <unistd.h>
 
 #include <readline/history.h>
@@ -29,9 +28,29 @@ void yyerror(char const *str) { fprintf(stderr, "%s\n", str); }
  */
 int parseLine(void) {
   if (interactiveMode) {
+    char computerName[256];
+    if (gethostname(computerName, sizeof(computerName)) != 0) { perror("Error getting computer name");}
+
+    char *dotLocal = strstr(computerName, ".local");
+    if (dotLocal != NULL) {
+        *dotLocal = '\0'; // Remplace le point avec un caractère null
+    }
+
+    char computerName2[256];
+    strcpy(computerName2, computerName); // Copie le contenu de computerName dans computerName2
+
+    char *lastDash = strrchr(computerName2, '-'); // Recherche du dernier "-"
+    if (lastDash != NULL) {
+        lastDash++; // Avance d'une position pour obtenir le mot après le dernier "-"
+       }
+    for (int i = 0; lastDash[i] != '\0'; i++) {
+        if (lastDash[i] >= 'A' && lastDash[i] <= 'Z') {
+            lastDash[i] = lastDash[i] + 32; // Convertit le caractère en minuscule
+        }
+    }
     char prompt[64];
     snprintf(prompt, sizeof(prompt),
-             "\33[1mmini_shell(\33[3%dm%d\33[0;1m):\33[0m ",
+             "\33[1m%s@%s(\33[3%dm%d\33[0;1m):\33[0m ",lastDash, computerName,
              shellStatus == EXIT_SUCCESS ? 2 /* vert */ : 1 /* rouge */,
              shellStatus);
     char *line = readline(prompt);
