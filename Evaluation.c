@@ -154,13 +154,12 @@ int RedirectCommand(Expression *expr){
       if (pid == 0) {
         int out = open(expr->redirect.fileName, O_CREAT | O_WRONLY | O_APPEND, 0644);
         if (out == -1) {
-            perror("open");
-            exit(1);
+          perror("open");
+          exit(1);
         }
-        dup2(out, STDOUT_FILENO); // Redirige stdout vers le fichier en mode prolongation (>>)
+        dup2(out, STDOUT_FILENO);
+        evaluateExpr(expr->left);
         close(out);
-        simpleCommand(expr);
-        //perror("execvp");
         exit(127);
       }
       waitpid(pid, NULL, 0);
