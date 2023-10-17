@@ -12,6 +12,7 @@
 int valeurStatus(int status);
 int simpleCommand(Expression *expr);
 int RedirectCommand(Expression *expr);
+int pipeCommand(Expression *expr);
 
 // ---- MAIN FUNCTION ---- //
 
@@ -46,6 +47,7 @@ int evaluateExpr(Expression *expr) {
     case ET_BG: // Tâche en arrière-plan (&)
       break;
     case ET_PIPE: // Tube (|)
+      pipeCommand(expr);
       break;
     default:
       fprintf(stderr, "Match with no type of expression");
@@ -158,7 +160,7 @@ int RedirectCommand(Expression *expr){
         dup2(out, STDOUT_FILENO); // Redirige stdout vers le fichier en mode prolongation (>>)
         close(out);
         simpleCommand(expr);
-        perror("execvp");
+        //perror("execvp");
         exit(127);
       }
       waitpid(pid, NULL, 0);
@@ -169,4 +171,43 @@ int RedirectCommand(Expression *expr){
       break;
   }
   return shellStatus;
+}
+
+int pipeCommand(Expression *expr) {
+  int tube[2];
+  if (pipe(tube) == -1) {
+    perror("pipe");
+    return 1;
+  }
+  pid_t pid1, pid2;
+  if ((pid1 = fork()) == -1) {
+    perror("fork");
+    return 1;
+  }
+  if (pid1 == 0) {
+    close(tube[0]);
+    dup2(tube[1], STDOUT_FILENO);
+    close(tube[1]);
+    evaluateExpr(expr->left);
+    exit(127);
+  }
+  if ((pid2 = fork()) == -1) {
+    perror("fork");
+    return 1;
+  }
+  if (pid2 == 0) {
+    close(tube[1]);
+    dup2(tube[0], STDIN_FILENO);
+    close(tube[0]);
+    evaluateExpr(expr->right);
+    exit(127);
+  }
+  close(tube[0]);
+  close(tube[1]);
+
+  int status;
+  waitpid(pid1, &status, 0);
+  waitpid(pid2, &status, 0);
+
+  return valeurStatus(status);
 }
