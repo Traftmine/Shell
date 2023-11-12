@@ -13,6 +13,8 @@ int valeurStatus(int status);
 int simpleCommand(Expression *expr);
 int RedirectCommand(Expression *expr);
 int pipeCommand(Expression *expr);
+int backgroundCommand(Expression *expr);
+void sigintHandler(int signum);
 
 // ---- MAIN FUNCTION ---- //
 
@@ -45,6 +47,7 @@ int evaluateExpr(Expression *expr) {
       return 1;
       break;
     case ET_BG: // Tâche en arrière-plan (&)
+      return backgroundCommand(expr);
       break;
     case ET_PIPE: // Tube (|)
       pipeCommand(expr);
@@ -120,7 +123,6 @@ int RedirectCommand(Expression *expr){
         }
         else {
           dup2(out, STDOUT_FILENO);
-
         }
         evaluateExpr(expr->left);
         close(out);
@@ -172,6 +174,8 @@ int RedirectCommand(Expression *expr){
   return shellStatus;
 }
 
+// ----Pipe Command ----//
+
 int pipeCommand(Expression *expr) {
   int tube[2];
   if (pipe(tube) == -1) {
@@ -208,5 +212,31 @@ int pipeCommand(Expression *expr) {
   waitpid(pid1, &status, 0);
   waitpid(pid2, &status, 0);
 
+  return valeurStatus(status);
+}
+
+// --- Background Command ---//
+
+int backgroundCommand(Expression *expr){
+  pid_t child_pid;
+  child_pid = fork();
+
+  if (child_pid == 0) {
+    pid_t child_child_pid;
+    child_child_pid = fork();
+
+    if (child_child_pid == 0) {
+      evaluateExpr(expr->left); }
+    else if (child_child_pid == -1) { // Si problème de fork avec child_child_pid
+      perror("fork");
+      exit(1); }
+
+    exit(0); // Si aucun problème
+  } else if(child_pid == -1) { // Si problème de fork avec child_pid
+    perror("fork");
+    exit(1); }
+
+  int status;
+  waitpid(child_pid,&status,0);
   return valeurStatus(status);
 }
