@@ -73,16 +73,24 @@ int valeurStatus(int status) {
 int simpleCommand(Expression *expr) {
   // Extraction de la commande et de ses arguments de l'expression //
   char *command = expr->argsList.args[0]; // Commande principale
+
   // Handle the "cd" command separately
   if (strcmp(command, "cd") == 0) {
-    if (expr->argc > 1) {
-      if (chdir(expr->argv[1]) == 0) {
-        printf("Changed directory to %s\n", expr->argv[1]);
-      } else { perror("cd"); }
-    } else { fprintf(stderr, "cd: missing argument\n"); }
-    return 0; // success for "cd"
-  }
+      if (expr->argc == 1) {
+        // No arguments provided, change to the root directory
+        if (chdir("/") == 0) {
+            printf("Changed directory to the root directory\n");
+        } else { perror("cd"); }
 
+      } else if (expr->argc == 2) {
+        // Argument provided, change to the specified directory
+        if (chdir(expr->argv[1]) == 0) {
+            printf("Changed directory to %s\n", expr->argv[1]);
+        } else { perror("cd"); }
+
+      } else { fprintf(stderr, "cd: too many arguments\n"); }
+      return 0; // success for "cd"
+  }
   int status;
   char *args[64];
   for (int i = 0; i < expr->argc; i++) {

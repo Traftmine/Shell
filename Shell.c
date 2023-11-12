@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <limits.h>  // For PATH_MAX
 
 #include <readline/history.h>
 #include <readline/readline.h>
@@ -21,19 +22,33 @@ void EndOfFile(void) {
 // Appelée par yyparse() sur erreur syntaxique
 void yyerror(char const *str) { fprintf(stderr, "%s\n", str); }
 
-/*
- * - Lecture de la ligne de commande à l'aide de readline() en mode interactif
- * - Mémorisation dans l'historique des commandes
- * - Analyse de la ligne lue
- */
+// Function to get the current working directory
+char* getCurrentWorkingDirectory() {
+  static char cwd[PATH_MAX];
+  if (getcwd(cwd, sizeof(cwd)) != NULL) {
+    return cwd;
+  } else {
+    perror("getcwd");
+    return NULL;
+  }
+}
+
+// Extracts the last component of the path (directory or file name)
+const char* getLastPathComponent(const char* path) {
+  const char* lastSlash = strrchr(path, '/');
+  return (lastSlash != NULL) ? (lastSlash + 1) : path;
+}
+
 int parseLine(void) {
   if (interactiveMode) {
     char computerName[256];
-    if (gethostname(computerName, sizeof(computerName)) != 0) { perror("Error getting computer name");}
+    if (gethostname(computerName, sizeof(computerName)) != 0) {
+      perror("Error getting computer name");
+    }
 
     char *dotLocal = strstr(computerName, ".local");
     if (dotLocal != NULL) {
-        *dotLocal = '\0'; // Remplace le point avec un caractère null
+      *dotLocal = '\0'; // Remplace le point avec un caractère null
     }
 
     char computerName2[256];
@@ -41,18 +56,19 @@ int parseLine(void) {
 
     char *lastDash = strrchr(computerName2, '-'); // Recherche du dernier "-"
     if (lastDash != NULL) {
-        lastDash++; // Avance d'une position pour obtenir le mot après le dernier "-"
-       }
-    for (int i = 0; lastDash[i] != '\0'; i++) {
-        if (lastDash[i] >= 'A' && lastDash[i] <= 'Z') {
-            lastDash[i] = lastDash[i] + 32; // Convertit le caractère en minuscule
-        }
+      lastDash++; // Avance d'une position pour obtenir le mot après le dernier "-"
     }
-    char prompt[64];
+    for (int i = 0; lastDash[i] != '\0'; i++) {
+      if (lastDash[i] >= 'A' && lastDash[i] <= 'Z') {
+        lastDash[i] = lastDash[i] + 32; // Convertit le caractère en minuscule
+      }
+    }
+    char prompt[256]; // Increased buffer size to accommodate the path
     snprintf(prompt, sizeof(prompt),
-             "\33[1m%s@%s(\33[3%dm%d\33[0;1m):\33[0m ",lastDash, computerName,
-             shellStatus == EXIT_SUCCESS ? 2 /* vert */ : 1 /* rouge */,
+             "\33[1m%s@%s %s(\33[3%dm%d\33[0;1m) %%\33[0m ", lastDash, computerName,
+              getLastPathComponent(getCurrentWorkingDirectory()),shellStatus == EXIT_SUCCESS ? 2 /* vert */ : 1 /* rouge */,
              shellStatus);
+
     char *line = readline(prompt);
     if (line != NULL) {
       int ret;
@@ -86,31 +102,6 @@ void commandExecution(int parsingResult) {
     shellStatus = 2;
   }
 }
-
-
-     /*--------------------------------------------------------------------------------------*\
-      | Lorsque l'analyse de la ligne de commande est effectuée sans erreur, la variable     |
-      | globale parsedExpr pointe sur un arbre représentant l'expression. Le type            |
-      | « Expression » des nœuds de l'arbre est décrit dans le fichier Expression.h.         |
-      |                                                                                      |
-      | e étant de type Expression * :                                                       |
-      | - e->type est un type d'expression, contenant une valeur définie par énumération     |
-      |    dans Shell.h.                                                                     |
-      | - e->left et e->right, de type Expression *, représentent une sous-expression gauche |
-      |    et une sous-expression droite.                                                    |
-      |    - Ces deux champs ne sont pas utilisés pour les types EMPTY et SIMPLE.            |
-      |    - Pour les types SEQUENCE, SEQUENCE_AND, SEQUENCE_OR et PIPE, ces deux champs     |
-      |       sont utilisés simultanément.                                                   |
-      |    - Pour les autres types, seule l'expression gauche est utilisée.                  |
-      | - Pour le type SIMPLE : e->argc (int) et e->argv (char * *) sont disponibles.        |
-      | - Pour le type REDIRECT : e->redirect contient les informations de redirection.      |
-      |    - e->redirect.type indique le type.                                               |
-      |    - e->redirect.fd est le descripteur de fichier à rediriger.                       |
-      |    - e->redirect.toOtherFd vaut vrai si la redirection est à faire vers un autre     |
-      |       descripteur de fichier.                                                        |
-      |    - e->redirect.fileName, de type char *, contient le nom du fichier (ou numéro de  |
-      |       descripteur de fichier) vers lequel rediriger.                                 |
-     \*--------------------------------------------------------------------------------------*/
 
 int main(int argc, char *argv[]) {
   shell.args = (ProgramArgs){argc, argv};
