@@ -70,23 +70,30 @@ int valeurStatus(int status) {
 
 // --- Simple Command ---//
 
-int simpleCommand(Expression *expr){
-  int status;
+int simpleCommand(Expression *expr) {
   // Extraction de la commande et de ses arguments de l'expression //
   char *command = expr->argsList.args[0]; // Commande principale
-
-  char *args[64];
-  for (int i = 0; i < expr->argc; i++){
-    args[i] = expr->argv[i];
+  // Handle the "cd" command separately
+  if (strcmp(command, "cd") == 0) {
+    if (expr->argc > 1) {
+      if (chdir(expr->argv[1]) == 0) {
+        printf("Changed directory to %s\n", expr->argv[1]);
+      } else { perror("cd"); }
+    } else { fprintf(stderr, "cd: missing argument\n"); }
+    return 0; // success for "cd"
   }
+
+  int status;
+  char *args[64];
+  for (int i = 0; i < expr->argc; i++) {
+    args[i] = expr->argv[i]; }
   args[expr->argc] = NULL;
 
   pid_t pid = fork();
   if (pid == -1) {
     // Erreur lors de la création du processus fils
     perror("fork");
-    return -1;
-  }
+    return -1; }
   if (pid == 0) {
     // Code du processus fils
     execvp(command, args);
