@@ -14,7 +14,6 @@ int simpleCommand(Expression *expr);
 int RedirectCommand(Expression *expr);
 int pipeCommand(Expression *expr);
 int backgroundCommand(Expression *expr);
-void sigintHandler(int signum);
 
 // ---- MAIN FUNCTION ---- //
 
